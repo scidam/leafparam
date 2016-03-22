@@ -175,18 +175,21 @@ graph=[]
 # stem  = (flb==ind+1)
 
 
-for k in labels:
-  for j in dataset[k]:
-    im = imread(j)
-    im = leaf_image_preprocess(im)
-    img_filt = extract_leaf_stem(im)
-    contours = measure.find_contours(img_filt, 0.8)
-    a,b,c=parametrize(get_largest(contours))
-    allpars.append(np.abs(np.fft.fft(a))/float(len(a)))
-    alllen.append(b)
-    alllab.append(k)
-    graph.append(a)
-    print j
+
+# parametrization main loop
+
+#for k in labels:
+  #for j in dataset[k]:
+    #im = imread(j)
+    #im = leaf_image_preprocess(im)
+    #img_filt = extract_leaf_stem(im)
+    #contours = measure.find_contours(img_filt, 0.8)
+    #a,b,c=parametrize(get_largest(contours))
+    #allpars.append(np.abs(np.fft.fft(a))/float(len(a)))
+    #alllen.append(b)
+    #alllab.append(k)
+    #graph.append(a)
+    #print j
     
    
 #print np.shape(alllab), np.shape(allpars)
@@ -201,29 +204,39 @@ ax = fig.add_subplot(111)
 
 
 
+x = np.linspace(0,1,10000)
+y = x*1.5*np.pi
 
-for k in [8, 1]:
-    #ffts = np.fft.fft(graph[k])
-    #freq = np.fft.fftfreq(np.shape(graph[k])[-1])
-    #print np.max(freq), np.min(freq)
-    #ffts[freq>0.2]=0.0
-    pts = getpoints(graph[k], np.array(alllen[k])/alllen[k][-1])
-    ax.plot(pts[:,0], pts[:,1],'.')
-    #print alllen[k][1:10]
 
-    #plt.figure()
-    ###plt.plot(np.fft.fftfreq(len(allpars[k]),d=1/RESOLUTION), allpars[k])
-    ###plt.title(k)
-    ###plt.figure()
-    ##plt.plot(graph[k][:,0],graph[k][:,1])
-    ##plt.title(k)
-  ##ax.plot(graph[k])
-##ax.plot(graph[1][:,0],graph[1][:,1])
-
-##ax.plot(allpars[16][::5])
-##ax.plot(allpars[1][::5])
-
+ppts=getpoints(y, x)
+ax.plot(ppts[:,0], ppts[:,1], 'r')
+plt.axis('equal')
 plt.show()
+
+
+
+#for k in [8, 1]:
+    ##ffts = np.fft.fft(graph[k])
+    ##freq = np.fft.fftfreq(np.shape(graph[k])[-1])
+    ##print np.max(freq), np.min(freq)
+    ##ffts[freq>0.2]=0.0
+    #pts = getpoints(graph[k], np.array(alllen[k])/alllen[k][-1])
+    #ax.plot(pts[:,0], pts[:,1],'.')
+    ##print alllen[k][1:10]
+
+    ##plt.figure()
+    ####plt.plot(np.fft.fftfreq(len(allpars[k]),d=1/RESOLUTION), allpars[k])
+    ####plt.title(k)
+    ####plt.figure()
+    ###plt.plot(graph[k][:,0],graph[k][:,1])
+    ###plt.title(k)
+  ###ax.plot(graph[k])
+###ax.plot(graph[1][:,0],graph[1][:,1])
+
+###ax.plot(allpars[16][::5])
+###ax.plot(allpars[1][::5])
+
+#plt.show()
 
 
 
