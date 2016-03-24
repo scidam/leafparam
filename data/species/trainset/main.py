@@ -8,6 +8,7 @@ from skimage import measure
 import matplotlib.pyplot as plt
 import numpy as np
 from scipy import interpolate
+from scipy import signal
 
 from sklearn.lda import LDA
 from sklearn.qda import QDA
@@ -26,7 +27,7 @@ import pdb
 # 2. 
 
 
-RESOLUTION = float(3000)
+RESOLUTION = float(1000)
 
 def is_closed(contour):
   return (contour[0]==contour[-1]).all()
@@ -41,16 +42,20 @@ def get_largest(contours):
     return contours[np.argmax(_l)]
 
 
-def parametrize(contour):
+def parametrize(contour, resolution=RESOLUTION):
     _cont = np.array(contour)
     tck,u=interpolate.splprep([_cont[:,0],_cont[:,1]],s=0)
-    unew = np.arange(0,1.0+1.0/RESOLUTION,1.0/RESOLUTION)
+    unew = np.arange(0,1.0+1.0/resolution,1.0/resolution)
     r = np.array(interpolate.splev(unew,tck)).transpose()
-    dr = np.array(interpolate.splev(unew,tck,der=1)).transpose()
-    _t = np.arctan(dr[:,1]/dr[:,0])
-    _t[dr[:,0]<0.0] = np.pi+np.arctan(dr[dr[:,0]<0.0,1]/dr[dr[:,0]<0.0,0])
     _l = [length(r[:j]) for j in range(1,len(r)+1)]
-    return (_t, _l, r)
+    _l = np.array(_l)/np.max(_l)
+    ttck = interpolate.splrep(_l, unew)
+    regu = interpolate.splev(unew, ttck)
+    dr = np.array(interpolate.splev(regu,tck,der=1)).transpose()
+    lzero =  dr[:,0] <= 0.0
+    _t = np.arctan(dr[:,1]/dr[:,0])
+    _t[lzero] = np.pi + _t[lzero]
+    return (_t.tolist(), unew.tolist(), r)
 
 
 def getpoints(t,l):
@@ -177,19 +182,35 @@ graph=[]
 
 
 # parametrization main loop
-
-#for k in labels:
-  #for j in dataset[k]:
-    #im = imread(j)
-    #im = leaf_image_preprocess(im)
-    #img_filt = extract_leaf_stem(im)
-    #contours = measure.find_contours(img_filt, 0.8)
-    #a,b,c=parametrize(get_largest(contours))
-    #allpars.append(np.abs(np.fft.fft(a))/float(len(a)))
-    #alllen.append(b)
-    #alllab.append(k)
-    #graph.append(a)
-    #print j
+indd=1
+for k in labels:
+  for j in dataset[k]:
+    im = imread(j)
+    im = leaf_image_preprocess(im)
+    img_filt = extract_leaf_stem(im)
+    contours = measure.find_contours(img_filt, 0.8)
+    a,b,c=parametrize(get_largest(contours))
+    allpars.append(np.abs(np.fft.fft(a))/float(len(a)))
+    alllen.append(b)
+    alllab.append(k)
+    graph.append(a)
+    fig = plt.figure()
+    ax = fig.add_subplot(111)
+    cwtmatr = signal.cwt(signal.decimate(a,4),signal.ricker, np.linspace(0.0001,1,200))
+    #toplt=[]
+    #for x in cwtmatr: 
+        #if any(x[x>2]):
+            #toplt.append(np.mean(x[x>2]))
+        #else:
+            #toplt.append(0)
+    ax.plot(np.mean(cwtmatr, axis=1))
+    ax.set_title('%s'%j)
+    #ax.set_xlim([0,160])
+    #ax.set_ylim([-3,7])
+    fig.savefig('%s.png'%indd)
+    plt.close(fig)
+    indd+=1
+    print j
     
    
 #print np.shape(alllab), np.shape(allpars)
@@ -198,43 +219,46 @@ graph=[]
 
 #print cross_validation.cross_val_score(lda, allpars, alllab, cv=4),len(graph)
 
-fig = plt.figure()
-ax = fig.add_subplot(111)
 
 
 
 
-x = np.linspace(0,1,10000)
-y = x*1.5*np.pi
+
+#x = np.linspace(0,1,10000)
+#y = x*1.5*np.pi
 
 
-ppts=getpoints(y, x)
-ax.plot(ppts[:,0], ppts[:,1], 'r')
-plt.axis('equal')
-plt.show()
+#ppts=getpoints(y, x)
+#ax.plot(ppts[:,0], ppts[:,1], 'r')
+#plt.axis('equal')
+#plt.show()
 
 
 
-#for k in [8, 1]:
-    ##ffts = np.fft.fft(graph[k])
-    ##freq = np.fft.fftfreq(np.shape(graph[k])[-1])
-    ##print np.max(freq), np.min(freq)
-    ##ffts[freq>0.2]=0.0
-    #pts = getpoints(graph[k], np.array(alllen[k])/alllen[k][-1])
-    #ax.plot(pts[:,0], pts[:,1],'.')
-    ##print alllen[k][1:10]
+#for k in [1]:
+    ###ffts = np.fft.fft(graph[k])
+    ###freq = np.fft.fftfreq(np.shape(graph[k])[-1])
+    ###print np.max(freq), np.min(freq)
+    ###ffts[freq>0.2]=0.0
+    #y = graph[k]
+    #x = np.array(alllen[k])
+    #widths = np.linspace(0,0.999,2000)+0.0001
+    
+    ##pts = getpoints(y,x)
+    ##ax.plot(pts[:,0],pts[:,1],'.')
+    ###print alllen[k][1:10]
 
-    ##plt.figure()
-    ####plt.plot(np.fft.fftfreq(len(allpars[k]),d=1/RESOLUTION), allpars[k])
+    ###plt.figure()
+    #####plt.plot(np.fft.fftfreq(len(allpars[k]),d=1/RESOLUTION), allpars[k])
+    #####plt.title(k)
+    #####plt.figure()
+    ####plt.plot(graph[k][:,0],graph[k][:,1])
     ####plt.title(k)
-    ####plt.figure()
-    ###plt.plot(graph[k][:,0],graph[k][:,1])
-    ###plt.title(k)
-  ###ax.plot(graph[k])
-###ax.plot(graph[1][:,0],graph[1][:,1])
+  ####ax.plot(graph[k])
+####ax.plot(graph[1][:,0],graph[1][:,1])
 
-###ax.plot(allpars[16][::5])
-###ax.plot(allpars[1][::5])
+####ax.plot(allpars[16][::5])
+####ax.plot(allpars[1][::5])
 
 #plt.show()
 
