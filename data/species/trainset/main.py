@@ -4,6 +4,8 @@ from skimage.io import imread
 from skimage import feature
 from skimage.color import rgb2gray
 from skimage import measure
+from cachepy import Cache
+
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -26,8 +28,10 @@ import pdb
 # 1. image filtering... 
 # 2. 
 
+mycache = Cache('test.dat')
 
 RESOLUTION = float(1000)
+
 
 def is_closed(contour):
   return (contour[0]==contour[-1]).all()
@@ -120,9 +124,6 @@ def extract_leaf_stem(image, maxdisksize=30, minstempixels=100):
     return res
 
 
-
-
-
 #----------------------------------------------------------- 
 
 
@@ -132,13 +133,6 @@ def extract_leaf_stem(image, maxdisksize=30, minstempixels=100):
   
 from files import dataset
 labels = np.array(dataset.keys(), dtype=np.int)
-
-
-
-allpars = []
-alllen = []
-alllab = []
-graph=[]
 
 
 # lbls = slic(im, n_segments=2,compactness=1)
@@ -182,37 +176,49 @@ graph=[]
 
 
 # parametrization main loop
-indd=1
-for k in labels:
-  for j in dataset[k]:
-    im = imread(j)
-    im = leaf_image_preprocess(im)
-    img_filt = extract_leaf_stem(im)
-    contours = measure.find_contours(img_filt, 0.8)
-    a,b,c=parametrize(get_largest(contours))
-    allpars.append(np.abs(np.fft.fft(a))/float(len(a)))
-    alllen.append(b)
-    alllab.append(k)
-    graph.append(a)
-    fig = plt.figure()
-    ax = fig.add_subplot(111)
-    cwtmatr = signal.cwt(signal.decimate(a,4),signal.ricker, np.linspace(0.0001,1,200))
-    #toplt=[]
-    #for x in cwtmatr: 
-        #if any(x[x>2]):
-            #toplt.append(np.mean(x[x>2]))
-        #else:
-            #toplt.append(0)
-    ax.plot(np.mean(cwtmatr, axis=1))
-    ax.set_title('%s'%j)
-    #ax.set_xlim([0,160])
-    #ax.set_ylim([-3,7])
-    fig.savefig('%s.png'%indd)
-    plt.close(fig)
-    indd+=1
-    print j
-    
-   
+
+@mycache
+def loadmydata():
+    alla, allb, allc, alll = [], [], [], []
+    indd=1
+    for k in labels:
+      for j in dataset[k]:
+        im = imread(j)
+        im = leaf_image_preprocess(im)
+        img_filt = extract_leaf_stem(im)
+        contours = measure.find_contours(img_filt, 0.8)
+        a,b,c=parametrize(get_largest(contours))
+        alla.append(a)
+        allb.append(b)
+        allc.append(c)
+        alll.append(k)
+#         fig = plt.figure()
+#         ax = fig.add_subplot(111)
+#         cwtmatr = signal.cwt(signal.decimate(a,4),signal.ricker, np.linspace(0.0001,1,200))
+        #toplt=[]
+        #for x in cwtmatr: 
+            #if any(x[x>2]):
+                #toplt.append(np.mean(x[x>2]))
+            #else:
+                #toplt.append(0)
+        #ax.set_xlim([0,160])
+        #ax.set_ylim([-3,7])
+        print j 
+    return alla, allb, allc, alll
+
+alla,allb,allc,alll = loadmydata()
+
+storage = []
+for a, l in zip(alla, alll):
+    print np.shape(a),l
+    storage.append(signal.cwt(signal.decimate(a,4),signal.ricker, np.linspace(0.001,1,200)))
+
+plt.imshow(storage[0])
+plt.show()
+
+print len(storage)
+
+
 #print np.shape(alllab), np.shape(allpars)
 
 #lda = LDA()
