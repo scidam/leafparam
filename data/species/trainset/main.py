@@ -1,33 +1,31 @@
 
 
-from skimage.io import imread
-from skimage import feature
-from skimage.color import rgb2gray
-from skimage import measure
+import pdb
+
 from cachepy import Cache
-
-
-import matplotlib.pyplot as plt
-import numpy as np
 from scipy import interpolate
 from scipy import signal
-
+from skimage import feature
+from skimage import measure
+from skimage.color import rgb2gray
+from skimage.io import imread
+from skimage.morphology import  disk
+from skimage.morphology import  white_tophat
+from skimage.segmentation import slic
+from skimage.transform import resize
+from sklearn import cross_validation
+from sklearn.cluster import KMeans
+from sklearn.decomposition import PCA
 from sklearn.lda import LDA
 from sklearn.qda import QDA
-from sklearn import cross_validation
 
-from skimage.morphology import  white_tophat
-from skimage.morphology import  disk
-from skimage.transform import resize
-
-from skimage.segmentation import slic
+from files import dataset
+import matplotlib.pyplot as plt
+import numpy as np
 
 
-from sklearn.cluster import KMeans
-import pdb
 # 1. image filtering... 
 # 2. 
-
 mycache = Cache('test.dat')
 
 RESOLUTION = float(1000)
@@ -131,7 +129,6 @@ def extract_leaf_stem(image, maxdisksize=30, minstempixels=100):
 
 
   
-from files import dataset
 labels = np.array(dataset.keys(), dtype=np.int)
 
 
@@ -208,12 +205,28 @@ def loadmydata():
 
 alla,allb,allc,alll = loadmydata()
 
-storage = []
-for a, l in zip(alla, alll):
-    print np.shape(a),l
-    storage.append(signal.cwt(signal.decimate(a,4),signal.ricker, np.linspace(0.001,1,200)))
+print 'All contours loaded:', len(allc)
 
-plt.imshow(storage[0])
+
+
+# storage = []
+# 
+# for a, l in zip(alla, alll):
+#     print np.shape(a),l
+#     storage.append(signal.cwt(signal.decimate(a,4),signal.ricker, np.linspace(0.001,1,200)))
+
+
+pca = PCA(n_components=2)
+pca.fit(allc[0])
+res=pca.transform(allc[0])
+scale = max(res[:,0])- min(res[:,0])
+pca1 = PCA(n_components=2)
+pca1.fit(allc[1])
+res1=pca.transform(allc[1])
+scale1 = max(res1[:,0])- min(res1[:,0])
+
+plt.plot((res[:,0]-np.mean(res[:,0]))/scale, (res[:,1]-np.mean(res[:,1]))/scale)
+plt.plot((res1[:,0]-np.mean(res1[:,0]))/scale1,  (res1[:,1]-np.mean(res1[:,1]))/scale1)
 plt.show()
 
 print len(storage)
